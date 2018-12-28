@@ -1,0 +1,72 @@
+open Printf
+open Scanf
+open Hashtbl
+open Array
+
+let n = scanf " %d" (fun a -> a)
+
+let possivelMover x y tabuleiro =
+  x >= 0 && y >= 0 && x < n && y < n && (tabuleiro.(x).(y) = 0)
+                                        
+let pos = [|(2,1); (1,2); (-2,-1); (-1, -2); (2,-1); (1,-2); (-2,1); (-1,2)|] 
+
+let rec numSaltos x y tabuleiro =
+    if not (possivelMover x y tabuleiro)  then 9 else
+      fold_left (fun saltos (a,b) -> if (possivelMover (x + a) (y + b) tabuleiro) then saltos + 1 else saltos)  0 pos
+
+let tudoOcupado t = for_all (fun l -> for_all (fun a -> a <> 0)  l ) t
+
+
+let posOrdenadas x y tpos tabuleiro = 
+  let pos = ref 1 in
+  let min = ref 1 in
+
+  for i = 0 to 6 do
+    let (a,b) = tpos.(i) in
+    min := numSaltos (x + a) (y + b) tabuleiro;
+    pos :=i;
+
+    for j = i+1 to 7 do
+      let (c,d) = tpos.(j) in
+      if numSaltos (x + c) (y + d) tabuleiro < !min
+      then 
+        (
+          min := numSaltos (x + c) (y + d) tabuleiro;
+          pos := j)
+    done;
+    if(!pos <> i) then
+      (
+        let temp = tpos.(!pos) in
+        tpos.(!pos) <- tpos.(i);
+        tpos.(i) <- temp)
+  done
+
+let rec solucao tabuleiro x y =
+  let rec auxFor i =
+    let ans = ref false in
+    let () =
+      if i<8 then
+          let (a,b) = pos.(i) in
+          if possivelMover (x+a) (y+b) tabuleiro then
+            (
+              tabuleiro.(x+a).(y+b) <- 1 ;
+              if solucao tabuleiro (x+a) (y+b) then ans:= true
+              else tabuleiro.(x+a).(y+b) <- 0
+            )
+    in
+    if (!ans) || (i = 8) then !ans else auxFor (i+1) 
+  in
+  let () = posOrdenadas x y pos tabuleiro in
+    tudoOcupado tabuleiro || auxFor 0
+
+let rec ler_ocupado t k =
+  if k <= 0 then ()
+  else
+    let () = scanf " %d %d" (fun a b -> t.(a).(b) <- 1) in
+    ler_ocupado t (k-1)
+
+let () =
+    let (x,y,k) = scanf" %d %d %d"(fun b c d -> (b,c,d)) in
+    let tabuleiro = Array.make_matrix n n 0 in
+    let () = ler_ocupado tabuleiro k  in
+    if solucao tabuleiro x y then printf "YES\n" else printf "NO\n"
